@@ -35,7 +35,7 @@ Ayudar a las personas a entender de forma sencilla:
 
 ## Aviso
 
-Esta herramienta tiene fines educativos e informativos.
+Esta herramienta tiene fines educativos e informativos..
 
 Los resultados son estimaciones y no constituyen asesoría fiscal, financiera o legal profesional.
 
