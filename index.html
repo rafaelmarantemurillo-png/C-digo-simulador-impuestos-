@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Simulador de Dinero e Inversión</title>
+<style>
+:root{
+  --bg1:#120e1a; --bg2:#1a1430; --card:#1d1830; --card2:#241d3d;
+  --line:#352c52; --p1:#b46ef0; --p2:#f0a8e8; --gold:#f3c969; --gold2:#ffe3a3;
+  --text:#f5f0ff; --muted:#a79bc4;
+  --good:#5fe3b0; --good2:#3fc593; --warn:#ff9f6b; --bad:#ff6b85; --blue:#7fb3e6;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:light){
+  :root:not([data-theme="dark"]){
+    --bg1:#faf3ff; --bg2:#f3e8ff; --card:#ffffff; --card2:#fbf5ff;
+    --line:#e6d6f7; --p1:#9b3fd9; --p2:#d946b8; --gold:#b8860b; --gold2:#8a6a22;
+    --text:#241433; --muted:#7a6b94;
+    --good:#1f9e73; --good2:#17805d; --warn:#d9742f; --bad:#d9435f; --blue:#3f6fa3;
+  }
+}
+html{scroll-padding-top:env(safe-area-inset-top,0px); height:100%;}
+*{box-sizing:border-box;}
+body{
+  margin:0; min-height:100%;
+  background:
+    radial-gradient(circle at 10% -10%, rgba(180,110,240,.25), transparent 45%),
+    radial-gradient(circle at 100% 20%, rgba(243,201,105,.15), transparent 40%),
+    radial-gradient(circle at 50% 100%, rgba(95,227,176,.12), transparent 40%),
+    linear-gradient(160deg, var(--bg1), var(--bg2));
+  color:var(--text);
+  font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  display:flex; justify-content:center;
+}
+.wrap{width:100%; max-width:520px; padding:26px 16px 50px;}
+
+.hero{text-align:center; margin-bottom:18px;}
+.hero .badge{display:inline-block; padding:5px 14px; border-radius:99px; border:1px solid var(--line); background:rgba(180,110,240,.15); color:var(--p2); font-size:.66rem; letter-spacing:.1em; text-transform:uppercase; margin-bottom:10px; font-weight:700;}
+.hero h1{font-size:1.5rem; margin:0 0 6px; font-weight:900; letter-spacing:-.01em; background:linear-gradient(90deg,var(--p2),var(--gold)); -webkit-background-clip:text; background-clip:text; color:transparent;}
+.hero p{color:var(--muted); font-size:.82rem; margin:0;}
+
+/* Tabs */
+.tabs{display:flex; gap:8px; background:rgba(0,0,0,.2); padding:5px; border-radius:16px; margin-bottom:18px; position:sticky; top:8px; z-index:10; backdrop-filter:blur(8px);}
+:root:not([data-theme="dark"]) .tabs{background:rgba(0,0,0,.05);}
+.tabs button{flex:1; padding:12px 6px; border:none; border-radius:12px; background:transparent; color:var(--muted); font-size:.82rem; font-weight:700; cursor:pointer; transition:all .18s;}
+.tabs button.active{background:linear-gradient(135deg,var(--p1),var(--p2)); color:#fff; box-shadow:0 6px 16px rgba(180,110,240,.35);}
+.tabview{display:none;}
+.tabview.active{display:block; animation:fadeIn .25s ease;}
+@keyframes fadeIn{from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:translateY(0);}}
+
+.card{background:linear-gradient(180deg,var(--card),var(--card2)); border:1px solid var(--line); border-radius:22px; padding:22px; margin-bottom:16px; box-shadow:0 14px 34px rgba(0,0,0,.3); position:relative; overflow:hidden;}
+.card::before{content:''; position:absolute; top:-40%; right:-20%; width:220px; height:220px; background:radial-gradient(circle, rgba(180,110,240,.14), transparent 70%); pointer-events:none;}
+.card h2{font-size:.92rem; margin:0 0 4px; display:flex; align-items:center; gap:8px;}
+.card .cap{font-size:.74rem; color:var(--muted); margin:0 0 16px;}
+
+.field{margin-bottom:14px;}
+.field label{display:block; font-size:.68rem; color:var(--muted); text-transform:uppercase; letter-spacing:.06em; margin-bottom:6px; font-weight:700;}
+.field input[type=text], .field select{width:100%; padding:12px 13px; border-radius:12px; border:1px solid var(--line); background:rgba(0,0,0,.2); color:var(--text); font-size:.92rem; font-family:inherit;}
+:root:not([data-theme="dark"]) .field input[type=text], :root:not([data-theme="dark"]) .field select{background:#fff;}
+.field input:focus, .field select:focus{outline:none; border-color:var(--p1); box-shadow:0 0 0 3px rgba(180,110,240,.18);}
+.grid2{display:grid; grid-template-columns:1fr 1fr; gap:12px;}
+.chips{display:flex; gap:8px;}
+.chip{flex:1; text-align:center; padding:10px 4px; border-radius:12px; border:1.5px solid var(--line); background:rgba(0,0,0,.12); font-size:.76rem; font-weight:700; color:var(--muted); cursor:pointer; transition:all .15s;}
+:root:not([data-theme="dark"]) .chip{background:rgba(0,0,0,.03);}
+.chip.sel{border-color:var(--p1); background:linear-gradient(135deg,rgba(180,110,240,.25),rgba(240,168,232,.18)); color:var(--p2);}
+
+.income-display{text-align:center; margin-bottom:6px;}
+.income-display .amt{font-size:2.3rem; font-weight:900; background:linear-gradient(90deg,var(--gold2),var(--gold)); -webkit-background-clip:text; background-clip:text; color:transparent;}
+.income-display .lbl{font-size:.66rem; color:var(--muted); text-transform:uppercase; letter-spacing:.08em; font-weight:700;}
+input[type=range]{width:100%; margin-top:14px; -webkit-appearance:none; height:8px; border-radius:8px; background:linear-gradient(90deg, var(--p1) var(--fill,0%), var(--line) var(--fill,0%));}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none; width:24px; height:24px; border-radius:50%; background:linear-gradient(135deg,var(--gold2),var(--gold)); border:3px solid var(--card); box-shadow:0 2px 12px rgba(243,201,105,.5); cursor:pointer;}
+input[type=range]::-moz-range-thumb{width:24px; height:24px; border-radius:50%; background:var(--gold2); border:3px solid var(--card); cursor:pointer;}
+.range-labels{display:flex; justify-content:space-between; font-size:.66rem; color:var(--muted); margin-top:6px; font-weight:600;}
+
+.tiles{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
+.tile{border:1.5px solid var(--line); border-radius:16px; padding:13px 10px; text-align:center; background:rgba(0,0,0,.12); transition:all .15s;}
+:root:not([data-theme="dark"]) .tile{background:rgba(0,0,0,.02);}
+.tile.on{border-color:var(--gold); background:linear-gradient(135deg,rgba(243,201,105,.16),rgba(180,110,240,.08));}
+.tile .icowrap{width:34px; height:34px; border-radius:50%; background:rgba(180,110,240,.15); display:flex; align-items:center; justify-content:center; margin:0 auto 7px;}
+.tile.on .icowrap{background:rgba(243,201,105,.22);}
+.tile .ico{width:18px; height:18px; stroke:var(--p2);}
+.tile.on .ico{stroke:var(--gold2);}
+.tile .nm{font-size:.68rem; font-weight:700; color:var(--text); line-height:1.2; margin-bottom:8px;}
+.tile .money{position:relative;}
+.tile .money span{position:absolute; left:9px; top:50%; transform:translateY(-50%); color:var(--muted); font-size:.74rem; font-weight:700;}
+.tile input{width:100%; text-align:right; padding:7px 8px 7px 18px; border-radius:9px; border:1px solid var(--line); background:rgba(0,0,0,.2); color:var(--gold2); font-size:.78rem; font-weight:700;}
+:root:not([data-theme="dark"]) .tile input{background:#fff;}
+
+.rowlist{display:flex; flex-direction:column; gap:9px;}
+.rowlist .lrow{display:flex; align-items:center; gap:10px; border:1px solid var(--line); border-radius:14px; padding:9px 12px; background:rgba(0,0,0,.12); transition:all .15s;}
+:root:not([data-theme="dark"]) .rowlist .lrow{background:rgba(0,0,0,.02);}
+.rowlist .lrow.on{border-color:var(--warn);}
+.rowlist .icowrap2{width:30px; height:30px; border-radius:50%; background:rgba(255,159,107,.14); display:flex; align-items:center; justify-content:center; flex-shrink:0;}
+.rowlist svg{width:16px; height:16px; stroke:var(--warn);}
+.rowlist .nm2{flex:1; font-size:.78rem; font-weight:700;}
+.rowlist .money2{position:relative; width:112px;}
+.rowlist .money2 span{position:absolute; left:9px; top:50%; transform:translateY(-50%); color:var(--muted); font-size:.74rem; font-weight:700;}
+.rowlist input{width:100%; text-align:right; padding:7px 8px 7px 18px; border-radius:9px; border:1px solid var(--line); background:rgba(0,0,0,.2); color:var(--text); font-size:.78rem; font-weight:700;}
+:root:not([data-theme="dark"]) .rowlist input{background:#fff;}
+
+.subtotal{display:flex; justify-content:space-between; align-items:baseline; margin-top:14px; padding-top:14px; border-top:1px dashed var(--line);}
+.subtotal .k{font-size:.74rem; color:var(--muted); font-weight:600;}
+.subtotal .v{font-size:1rem; font-weight:800;}
+.subtotal .v.gold{color:var(--gold2);}
+.subtotal .v.warn{color:var(--warn);}
+
+.result-card{text-align:center; padding-top:26px;}
+.donut-wrap{position:relative; width:180px; height:180px; margin:0 auto 18px;}
+.donut-wrap svg{transform:rotate(-90deg);}
+.donut-center{position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center;}
+.donut-center .amt{font-size:1.4rem; font-weight:900; color:var(--good); line-height:1.1;}
+.donut-center .lbl{font-size:.62rem; color:var(--muted); text-transform:uppercase; letter-spacing:.06em; margin-top:4px; font-weight:700;}
+
+.legend-row{display:flex; justify-content:center; gap:16px; margin-bottom:20px; font-size:.72rem; flex-wrap:wrap;}
+.legend-item{display:flex; align-items:center; gap:5px; color:var(--muted); font-weight:600;}
+.dot{width:9px; height:9px; border-radius:50%;}
+.dot.good{background:var(--good);} .dot.gold{background:var(--gold);} .dot.warn{background:var(--warn);}
+
+.stats{display:grid; grid-template-columns:1fr 1fr; gap:10px; text-align:left;}
+.stat{background:rgba(0,0,0,.16); border:1px solid var(--line); border-radius:14px; padding:12px 14px;}
+:root:not([data-theme="dark"]) .stat{background:rgba(0,0,0,.03);}
+.stat .k{font-size:.6rem; color:var(--muted); text-transform:uppercase; letter-spacing:.05em; margin-bottom:5px; font-weight:700;}
+.stat .v{font-size:.94rem; font-weight:800;}
+.stat .v.gold{color:var(--gold2);} .stat .v.warn{color:var(--warn);}
+.stat.final{grid-column:1/-1; text-align:center; padding:16px; background:linear-gradient(135deg,rgba(95,227,176,.12),rgba(180,110,240,.08));}
+.stat.final .v{font-size:1.5rem; color:var(--good);}
+.stat.final .v.neg{color:var(--bad);}
+
+.profile-tag{display:inline-flex; align-items:center; gap:6px; padding:7px 16px; border-radius:99px; background:linear-gradient(135deg,rgba(127,179,230,.18),rgba(180,110,240,.14)); border:1px solid var(--blue); color:var(--blue); font-size:.76rem; font-weight:800; margin-bottom:16px;}
+.inv-list{display:flex; flex-direction:column; gap:10px;}
+.inv-item{border:1px solid var(--line); border-radius:16px; padding:13px 14px; background:rgba(0,0,0,.12); display:flex; gap:12px; align-items:flex-start;}
+:root:not([data-theme="dark"]) .inv-item{background:rgba(0,0,0,.02);}
+.inv-item .icowrap3{width:34px; height:34px; border-radius:50%; background:rgba(127,179,230,.16); display:flex; align-items:center; justify-content:center; flex-shrink:0;}
+.inv-item .ico2{width:18px; height:18px; stroke:var(--blue);}
+.inv-item .body{flex:1;}
+.inv-item .t{font-size:.82rem; font-weight:800; margin-bottom:3px;}
+.inv-item .d{font-size:.74rem; color:var(--muted); line-height:1.45;}
+.inv-item .pct{font-size:.72rem; color:var(--gold2); font-weight:800; margin-top:4px;}
+.emergency-note{font-size:.78rem; background:rgba(255,159,107,.12); border:1px solid var(--warn); color:var(--warn); border-radius:14px; padding:12px 14px; margin-bottom:14px; line-height:1.5; font-weight:600;}
+
+.note{font-size:.7rem; color:var(--muted); line-height:1.6; margin-top:18px; text-align:center; padding:14px; border-top:1px dashed var(--line);}
+.note strong{color:var(--gold2);}
+
+/* Texto siempre oscuro y legible al escribir, sin importar el tema */
+.field input[type=text], .field select,
+.tile input, .rowlist input{
+  background:#ffffff !important;
+  color:#1c1230 !important;
+  font-weight:700;
+}
+.field input[type=text]::placeholder{ color:#8a80a0; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="hero">
+    <div class="badge">✨ ISR · Ahorro · Inversión</div>
+    <h1>Mi Dinero Inteligente</h1>
+    <p>Para estudiantes, empleados y freelancers — desde los 14 años</p>
+  </div>
+
+  <div class="tabs">
+    <button class="active" id="tabBtn1" onclick="showTab(1)">📝 Mis datos</button>
+    <button id="tabBtn2" onclick="showTab(2)">💡 Inversión</button>
+  </div>
+
+  <div class="tabview active" id="tabview1">
+
+    <div class="card">
+      <h2>👤 Cuéntanos de ti</h2>
+      <p class="cap">Para darte una recomendación más precisa</p>
+      <div class="field">
+        <label>Nombre</label>
+        <input type="text" id="nombre" placeholder="¿Cómo te llamas?" oninput="calcular()">
+      </div>
+      <div class="grid2">
+        <div class="field">
+          <label>Edad</label>
+          <input type="text" inputmode="numeric" id="edad" placeholder="16" oninput="calcular()">
+        </div>
+        <div class="field">
+          <label>A qué te dedicas</label>
+          <select id="ocupacion" onchange="calcular()">
+            <option>Estudiante</option>
+            <option>Empleado</option>
+            <option>Independiente / Freelance</option>
+            <option>Empresario</option>
+            <option>Jubilado</option>
+          </select>
+        </div>
+      </div>
+      <div class="field" style="margin-bottom:2px;">
+        <label>Experiencia invirtiendo o ahorrando</label>
+        <div class="chips">
+          <div class="chip sel" data-v="Principiante" onclick="selChip(this)">Principiante</div>
+          <div class="chip" data-v="Intermedio" onclick="selChip(this)">Intermedio</div>
+          <div class="chip" data-v="Avanzado" onclick="selChip(this)">Avanzado</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>💵 Tu ingreso o mesada mensual</h2>
+      <p class="cap">Desliza entre $1,500 y $50,000 — sueldo, medio tiempo o mesada</p>
+      <div class="income-display">
+        <div class="amt" id="salarioVal">$1,500</div>
+        <div class="lbl">al mes</div>
+      </div>
+      <input type="range" id="salarioSlider" min="1500" max="50000" step="100" value="1500" oninput="calcular()">
+      <div class="range-labels"><span>$1,500</span><span>$50,000</span></div>
+    </div>
+
+    <div class="card">
+      <h2>🧾 Gastos deducibles</h2>
+      <p class="cap">Si aplica, escribe lo que realmente pagas al mes</p>
+      <div class="tiles">
+        <div class="tile"><div class="icowrap"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M12 21s-7-4.5-9.5-9A5.5 5.5 0 0112 6a5.5 5.5 0 019.5 6c-2.5 4.5-9.5 9-9.5 9z"/></svg></div><div class="nm">Médicos y dentales</div><div class="money"><span>$</span><input type="number" value="0" oninput="calcular()"></div></div>
+        <div class="tile"><div class="icowrap"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M22 10L12 5 2 10l10 5 10-5zM6 12v5c0 1.5 3 3 6 3s6-1.5 6-3v-5"/></svg></div><div class="nm">Colegiaturas</div><div class="money"><span>$</span><input type="number" value="0" oninput="calcular()"></div></div>
+        <div class="tile"><div class="icowrap"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M12 2l8 4v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6l8-4z"/></svg></div><div class="nm">Seguro médico mayor</div><div class="money"><span>$</span><input type="number" value="0" oninput="calcular()"></div></div>
+        <div class="tile"><div class="icowrap"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M20.8 4.6a5 5 0 00-7.1 0L12 6.3l-1.7-1.7a5 5 0 10-7.1 7.1L12 20.4l8.8-8.7a5 5 0 000-7.1z"/></svg></div><div class="nm">Donativos</div><div class="money"><span>$</span><input type="number" value="0" oninput="calcular()"></div></div>
+        <div class="tile"><div class="icowrap"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke-width="2"><rect x="3" y="8" width="18" height="10" rx="2"/><circle cx="7.5" cy="18" r="1.5"/><circle cx="16.5" cy="18" r="1.5"/><path d="M5 8l1.5-4h11L19 8"/></svg></div><div class="nm">Transporte escolar</div><div class="money"><span>$</span><input type="number" value="0" oninput="calcular()"></div></div>
+        <div class="tile"><div class="icowrap"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg></div><div class="nm">Aportación al retiro</div><div class="money"><span>$</span><input type="number" value="0" oninput="calcular()"></div></div>
+      </div>
+      <div class="subtotal"><span class="k">Total deducible al mes</span><span class="v gold" id="dedTotal">$0</span></div>
+    </div>
+
+    <div class="card">
+      <h2>🔌 Servicios del hogar</h2>
+      <p class="cap">Agua, luz, gas, internet, teléfono</p>
+      <div class="rowlist" id="servRows">
+        <div class="lrow"><div class="icowrap2"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M12 2c3 4 6 7.5 6 11a6 6 0 11-12 0c0-3.5 3-7 6-11z"/></svg></div><div class="nm2">Agua</div><div class="money2"><span>$</span><input type="number" value="0" oninput="calcular()"></div></div>
+        <div class="lrow"><div class="icowrap2"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M13 2L4 14h6l-1 8 9-12h-6l1-8z"/></svg></div><div class="nm2">Luz</div><div class="money2"><span>$</span><input type="number" value="0" oninput="calcular()"></div></div>
+        <div class="lrow"><div class="icowrap2"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><circle cx="12" cy="13" r="8"/><path d="M9 2h6M12 2v4"/></svg></div><div class="nm2">Gas</div><div class="money2"><span>$</span><input type="number" value="0" oninput="calcular()"></div></div>
+        <div class="lrow"><div class="icowrap2"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M5 12.5a11 11 0 0114 0M8.5 16a6 6 0 017 0M12 19.5h.01"/></svg></div><div class="nm2">Internet</div><div class="money2"><span>$</span><input type="number" value="0" oninput="calcular()"></div></div>
+        <div class="lrow"><div class="icowrap2"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18h2"/></svg></div><div class="nm2">Saldo / plan telefónico</div><div class="money2"><span>$</span><input type="number" value="0" oninput="calcular()"></div></div>
+      </div>
+      <div class="subtotal"><span class="k">Total de servicios al mes</span><span class="v warn" id="servTotal">$0</span></div>
+    </div>
+
+    <div class="card">
+      <h2>🛒 Todos tus demás gastos</h2>
+      <p class="cap">Lo que gastas cada mes en vivir</p>
+      <div class="rowlist" id="genRows">
+        <div class="lrow"><div class="icowrap2"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M3 11l9-8 9 8M5 10v10h14V10"/></svg></div><div class="nm2">Renta / vivienda</div><div class="money2"><span>$</span><input type="number" value="0" oninput="calcular()"></div></div>
+        <div class="lrow"><div class="icowrap2"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M4 3h16l-1 9H5L4 3zM6 12l1 8h10l1-8"/></svg></div><div class="nm2">Alimentación</div><div class="money2"><span>$</span><input type="number" value="0" oninput="calcular()"></div></div>
+        <div class="lrow"><div class="icowrap2"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><rect x="3" y="8" width="18" height="10" rx="2"/><circle cx="7.5" cy="18" r="1.5"/><circle cx="16.5" cy="18" r="1.5"/></svg></div><div class="nm2">Transporte</div><div class="money2"><span>$</span><input type="number" value="0" oninput="calcular()"></div></div>
+        <div class="lrow"><div class="icowrap2"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M9 12l2 2 4-4"/></svg></div><div class="nm2">Entretenimiento</div><div class="money2"><span>$</span><input type="number" value="0" oninput="calcular()"></div></div>
+        <div class="lrow"><div class="icowrap2"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M4 4h16v16H4z"/><path d="M4 9h16M9 4v16"/></svg></div><div class="nm2">Otros gastos</div><div class="money2"><span>$</span><input type="number" value="0" oninput="calcular()"></div></div>
+      </div>
+      <div class="subtotal"><span class="k">Total de gastos al mes</span><span class="v warn" id="genTotal">$0</span></div>
+    </div>
+
+    <div class="card result-card">
+      <div class="donut-wrap">
+        <svg width="180" height="180" viewBox="0 0 190 190">
+          <circle cx="95" cy="95" r="80" fill="none" stroke="var(--line)" stroke-width="16"/>
+          <circle id="dGood" cx="95" cy="95" r="80" fill="none" stroke="var(--good)" stroke-width="16" stroke-linecap="round"/>
+          <circle id="dGold" cx="95" cy="95" r="80" fill="none" stroke="var(--gold)" stroke-width="16" stroke-linecap="round"/>
+          <circle id="dWarn" cx="95" cy="95" r="80" fill="none" stroke="var(--warn)" stroke-width="16" stroke-linecap="round"/>
+        </svg>
+        <div class="donut-center">
+          <div class="amt" id="teQueda">$0</div>
+          <div class="lbl" id="teQuedaLbl">te queda al mes</div>
+        </div>
+      </div>
+      <div class="legend-row">
+        <div class="legend-item"><span class="dot good"></span>Disponible</div>
+        <div class="legend-item"><span class="dot gold"></span>ISR</div>
+        <div class="legend-item"><span class="dot warn"></span>Gastos</div>
+      </div>
+      <div class="stats">
+        <div class="stat"><div class="k">Ingreso mensual</div><div class="v" id="rIngreso">$0.00</div></div>
+        <div class="stat"><div class="k">ISR mensual</div><div class="v gold" id="rIsr">$0.00</div></div>
+        <div class="stat"><div class="k">Gastos deducibles</div><div class="v gold" id="rDeduccion">$0.00</div></div>
+        <div class="stat"><div class="k">Servicios + otros gastos</div><div class="v warn" id="rGeneral">$0.00</div></div>
+        <div class="stat"><div class="k">Base gravable</div><div class="v" id="rBase">$0.00</div></div>
+        <div class="stat"><div class="k">Tasa efectiva</div><div class="v gold" id="rTasa">0.00%</div></div>
+        <div class="stat final"><div class="k">Lo que te queda al mes</div><div class="v" id="rFinal">$0.00</div></div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="tabview" id="tabview2">
+    <div class="card">
+      <h2>💡 Ideas para invertir tu dinero</h2>
+      <p class="cap" id="invGreeting">Completa tus datos para personalizar esto</p>
+      <div class="profile-tag" id="profileTag">⚖️ Perfil moderado</div>
+      <div id="emergencyBox"></div>
+      <div class="inv-list" id="invList"></div>
+    </div>
+  </div>
+
+  <div class="note">
+    Basado en la tarifa oficial ISR 2026 (Anexo 8 RMF, Art. 152 LISR). La deducción fiscal se limita al menor entre tus gastos deducibles, el <strong>15%</strong> de tu ingreso anual y <strong>5 UMAs</strong> (≈ $206,480/año). Este simulador y sus ideas de inversión tienen fines educativos y generales — no constituyen asesoría financiera personalizada. Si eres menor de edad, platica estas ideas con un adulto de confianza antes de tomar decisiones de dinero.
+  </div>
+</div>
+
+<script>
+const tablaAnual = [
+  {li:0.01, ls:10135.11, cf:0.00, pct:1.92},
+  {li:10135.12, ls:86022.11, cf:194.59, pct:6.40},
+  {li:86022.12, ls:151176.19, cf:5051.37, pct:10.88},
+  {li:151176.20, ls:175735.66, cf:12140.13, pct:16.00},
+  {li:175735.67, ls:210403.69, cf:16069.64, pct:17.92},
+  {li:210403.70, ls:424353.97, cf:22282.14, pct:21.36},
+  {li:424353.98, ls:668840.14, cf:67981.92, pct:23.52},
+  {li:668840.15, ls:1276925.98, cf:125485.07, pct:30.00},
+  {li:1276925.99, ls:1702567.97, cf:307910.81, pct:32.00},
+  {li:1702567.98, ls:5107703.92, cf:444116.23, pct:34.00},
+  {li:5107703.93, ls:Infinity, cf:1601862.46, pct:35.00},
+];
+const UMA_ANUAL_5 = 206480;
+const CIRC = 2*Math.PI*80;
+let experiencia = 'Principiante';
+
+function showTab(n){
+  document.getElementById('tabview1').classList.toggle('active', n===1);
+  document.getElementById('tabview2').classList.toggle('active', n===2);
+  document.getElementById('tabBtn1').classList.toggle('active', n===1);
+  document.getElementById('tabBtn2').classList.toggle('active', n===2);
+}
+function selChip(el){
+  document.querySelectorAll('.chip').forEach(c=>c.classList.remove('sel'));
+  el.classList.add('sel');
+  experiencia = el.dataset.v;
+  calcular();
+}
+function updateFill(slider){
+  const pct = (slider.value - slider.min) / (slider.max - slider.min) * 100;
+  slider.style.setProperty('--fill', pct + '%');
+}
+function calcularISRAnual(base){
+  if(base <= 0) return 0;
+  const tramo = tablaAnual.find(t => base >= t.li && base <= t.ls);
+  if(!tramo) return 0;
+  return tramo.cf + (base - tramo.li) * (tramo.pct/100);
+}
+function fmt(n){ return '$' + n.toLocaleString('es-MX', {minimumFractionDigits:2, maximumFractionDigits:2}); }
+function fmtShort(n){ return '$' + Math.round(n).toLocaleString('es-MX'); }
+
+const ICONS = {
+  alcancia:'<path d="M19 9c0-3-3.5-5-7-5S5 6 5 9c0 1.3.6 2.4 1.5 3.2L5 15h3l.8-1.5c.7.2 1.4.3 2.2.3s1.5-.1 2.2-.3L14 15h3l-1.5-2.8C18.4 11.4 19 10.3 19 9z"/><circle cx="15" cy="8" r=".8"/>',
+  cetes:'<circle cx="12" cy="12" r="9"/><path d="M8 12h8M12 8v8"/>',
+  fondo:'<path d="M3 11l9-8 9 8M5 10v10h14V10"/>',
+  afore:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/>',
+  etf:'<path d="M3 17l6-6 4 4 8-8M17 5h4v4"/>',
+  accion:'<path d="M4 20V10M10 20V4M16 20v-8M22 20H2"/>',
+  intl:'<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.5 4 5.8 4 9s-1.5 6.5-4 9c-2.5-2.5-4-5.8-4-9s1.5-6.5 4-9z"/>',
+  seguro:'<path d="M12 2l8 4v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6l8-4z"/>',
+  meta:'<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.3"/>',
+  libro:'<path d="M4 4h12a2 2 0 012 2v14H6a2 2 0 01-2-2V4z"/><path d="M8 8h6M8 12h6"/>'
+};
+function invItem(icon, titulo, desc, pct){
+  return '<div class="inv-item"><div class="icowrap3"><svg class="ico2" viewBox="0 0 24 24" fill="none" stroke-width="2">'+ICONS[icon]+'</svg></div>'+
+    '<div class="body"><div class="t">'+titulo+'</div><div class="d">'+desc+'</div><div class="pct">'+pct+'</div></div></div>';
+}
+
+function calcular(){
+  const slider = document.getElementById('salarioSlider');
+  updateFill(slider);
+  const salarioMensual = parseFloat(slider.value) || 0;
+  document.getElementById('salarioVal').textContent = fmtShort(salarioMensual);
+
+  let dedMensual = 0;
+  document.querySelectorAll('.tile').forEach(t => {
+    const v = parseFloat(t.querySelector('input').value) || 0;
+    t.classList.toggle('on', v > 0);
+    dedMensual += v;
+  });
+  document.getElementById('dedTotal').textContent = fmtShort(dedMensual);
+
+  let servMensual = 0;
+  document.querySelectorAll('#servRows .lrow').forEach(r => {
+    const v = parseFloat(r.querySelector('input').value) || 0;
+    r.classList.toggle('on', v > 0);
+    servMensual += v;
+  });
+  document.getElementById('servTotal').textContent = fmtShort(servMensual);
+
+  let genOnly = 0;
+  document.querySelectorAll('#genRows .lrow').forEach(r => {
+    const v = parseFloat(r.querySelector('input').value) || 0;
+    r.classList.toggle('on', v > 0);
+    genOnly += v;
+  });
+  document.getElementById('genTotal').textContent = fmtShort(genOnly);
+  const genMensual = servMensual + genOnly;
+
+  const salarioAnual = salarioMensual * 12;
+  const dedAnual = dedMensual * 12;
+  const topeDeduccion = Math.min(salarioAnual*0.15, UMA_ANUAL_5);
+  const deduccionAplicada = Math.max(0, Math.min(dedAnual, topeDeduccion));
+  const baseGravableAnual = Math.max(0, salarioAnual - deduccionAplicada);
+
+  const isrAnual = calcularISRAnual(baseGravableAnual);
+  const isrMensual = isrAnual/12;
+  const tasaEfectiva = salarioAnual > 0 ? (isrAnual/salarioAnual*100) : 0;
+  const teQueda = salarioMensual - isrMensual - dedMensual - genMensual;
+
+  document.getElementById('rIngreso').textContent = fmt(salarioMensual);
+  document.getElementById('rIsr').textContent = fmt(isrMensual);
+  document.getElementById('rDeduccion').textContent = fmt(dedMensual);
+  document.getElementById('rGeneral').textContent = fmt(genMensual);
+  document.getElementById('rBase').textContent = fmt(baseGravableAnual/12);
+  document.getElementById('rTasa').textContent = tasaEfectiva.toFixed(2) + '%';
+
+  const rFinal = document.getElementById('rFinal');
+  rFinal.textContent = fmt(teQueda);
+  rFinal.classList.toggle('neg', teQueda < 0);
+
+  const teQuedaEl = document.getElementById('teQueda');
+  const teQuedaLbl = document.getElementById('teQuedaLbl');
+  teQuedaEl.textContent = fmtShort(Math.abs(teQueda));
+  teQuedaEl.style.color = teQueda < 0 ? 'var(--bad)' : 'var(--good)';
+  teQuedaLbl.textContent = teQueda < 0 ? 'te falta al mes' : 'te queda al mes';
+
+  const base = salarioMensual > 0 ? salarioMensual : 1;
+  let pIsr = Math.max(0, Math.min(100, isrMensual/base*100));
+  let pGas = Math.max(0, Math.min(100-pIsr, (dedMensual+genMensual)/base*100));
+  let pGood = Math.max(0, 100 - pIsr - pGas);
+  const goldLen = CIRC*(pIsr/100), warnLen = CIRC*(pGas/100), goodLen = CIRC*(pGood/100);
+  document.getElementById('dGold').style.strokeDasharray = goldLen + ' ' + CIRC;
+  document.getElementById('dGold').style.strokeDashoffset = 0;
+  document.getElementById('dWarn').style.strokeDasharray = warnLen + ' ' + CIRC;
+  document.getElementById('dWarn').style.strokeDashoffset = -goldLen;
+  document.getElementById('dGood').style.strokeDasharray = goodLen + ' ' + CIRC;
+  document.getElementById('dGood').style.strokeDashoffset = -(goldLen+warnLen);
+
+  // --- Perfil de inversión ---
+  const nombre = document.getElementById('nombre').value.trim();
+  const edad = parseInt(document.getElementById('edad').value) || 16;
+  const ocupacion = document.getElementById('ocupacion').value;
+
+  let perfil, tagIcon, ideas = [];
+  const esTeen = edad < 18;
+
+  if(esTeen && experiencia === 'Principiante'){
+    perfil = 'En formación · primeros pasos'; tagIcon = '🌱';
+    ideas.push(invItem('meta','Ponle nombre a tus metas','Divide tu dinero en metas de corto plazo (algo que quieras pronto) y un frasco de "ahorro a futuro".','Empieza con 10-20% de tu mesada'));
+    ideas.push(invItem('alcancia','Ahorra antes de gastar','Aparta tu ahorro apenas recibas dinero, antes de gastar en cualquier otra cosa.','Hábito #1'));
+    ideas.push(invItem('libro','Aprende lo básico del dinero','Mira videos cortos o lee sobre qué es el interés y por qué ahorrar antes es mejor que después.','5-10 min a la semana'));
+  } else if(esTeen && experiencia === 'Intermedio'){
+    perfil = 'En formación · metas a mediano plazo'; tagIcon = '🌱';
+    ideas.push(invItem('meta','Fíjate una meta más grande','Ahorra para algo como un curso, una laptop o tu primer viaje: pon una fecha y una cantidad fija cada semana.','Meta a 6-12 meses'));
+    ideas.push(invItem('libro','Juega con el interés compuesto','Usa una calculadora de interés compuesto en línea y mira cuánto crecería $500 al mes en 5 o 10 años.','Ejercicio práctico'));
+    ideas.push(invItem('afore','Abre una cuenta con un adulto','Pide a tus papás o tutor que te ayuden a abrir una cuenta de ahorro juvenil que ya gane algo de interés.','Con apoyo de un adulto'));
+  } else if(esTeen){
+    perfil = 'En formación · preparándote para invertir'; tagIcon = '🌱';
+    ideas.push(invItem('etf','Practica sin dinero real','Usa un simulador de inversión ("paper trading") para entender cómo se mueve el mercado sin arriesgar nada.','Práctica sin riesgo'));
+    ideas.push(invItem('meta','Planea una meta grande a futuro','Estudiar fuera, un negocio propio, tu primer coche — divide la meta en ahorros mensuales concretos.','Meta a 2-5 años'));
+    ideas.push(invItem('afore','Investiga antes de cumplir 18','Investiga qué es un fondo indexado y una cuenta de inversión para saber por dónde empezar apenas seas mayor de edad.','Prepárate con tiempo'));
+    ideas.push(invItem('libro','Lee o escucha sobre finanzas','Busca libros, pódcasts o cursos gratuitos de finanzas personales hechos para principiantes.','Educación continua'));
+  } else if(experiencia === 'Principiante'){
+    perfil = 'Primeros pasos'; tagIcon = '🛡️';
+    ideas.push(invItem('cetes','CETES o pagarés bancarios','Bajo riesgo y alta liquidez — la forma más sencilla de empezar a ganar algo más que en una cuenta normal.','Sugerido: ~40-50% del excedente'));
+    ideas.push(invItem('fondo','Primero tu fondo de emergencia','Antes de invertir más fuerte, ten 3-6 meses de gastos guardados en algo líquido y seguro.','Prioridad #1'));
+    ideas.push(invItem('etf','Un fondo indexado sencillo','Opciones automatizadas con montos mínimos bajos, ideales para aprender invirtiendo poco a poco.','Sugerido: ~20-30%'));
+    ideas.push(invItem('afore','Aportación voluntaria al Afore','Fácil de automatizar y con beneficio fiscal en tu declaración anual.','Sugerido: ~10-20%'));
+  } else if(experiencia === 'Intermedio'){
+    perfil = 'Construyendo un portafolio'; tagIcon = '⚖️';
+    ideas.push(invItem('etf','ETFs o fondos indexados diversificados','Combina renta variable y deuda para un balance entre crecimiento y estabilidad.','Sugerido: ~40-50% del excedente'));
+    ideas.push(invItem('intl','Diversificación internacional','Un poco de exposición a mercados globales para no depender de un solo país o sector.','Sugerido: ~15-20%'));
+    ideas.push(invItem('afore','Afore voluntario + CETES de colchón','El Afore para el largo plazo, los CETES como reserva líquida de bajo riesgo.','Sugerido: ~20-25%'));
+    ideas.push(invItem('meta','Revisa y reequilibra cada 6-12 meses','Ajusta tu mezcla de inversiones según cómo cambien tus metas o el mercado.','Hábito recomendado'));
+  } else {
+    perfil = 'Crecimiento acelerado'; tagIcon = '🚀';
+    ideas.push(invItem('accion','Sectores de alto crecimiento','ETFs o acciones de tecnología, innovación o mercados emergentes: mayor potencial, también mayor volatilidad.','Sugerido: ~35-45% del excedente'));
+    ideas.push(invItem('etf','Reinvierte tus rendimientos','Reinvertir dividendos y ganancias en lugar de retirarlos acelera el crecimiento compuesto con el tiempo.','Estrategia clave'));
+    ideas.push(invItem('intl','Activos alternativos, con cautela','Bienes raíces (Fibras) o una exposición limitada a cripto — solo con dinero que puedas permitirte perder.','Sugerido: ~15-20%, máximo'));
+    ideas.push(invItem('cetes','Un colchón de liquidez táctico','Mantén algo en CETES o efectivo para poder comprar cuando el mercado caiga.','Sugerido: ~10-15%'));
+    ideas.push(invItem('seguro','No hay atajos garantizados','A mayor potencial de crecimiento, mayor riesgo de pérdida — "multiplicar rápido" también significa poder perder rápido.','Ten esto siempre presente'));
+  }
+
+  if(!esTeen && ocupacion === 'Independiente / Freelance'){
+    ideas.push(invItem('afore','Retiro por tu cuenta','Como no tienes aportaciones patronales, priorizar el Afore voluntario o un plan personal de retiro es aún más importante.','Prioridad alta'));
+  }
+
+  document.getElementById('profileTag').innerHTML = tagIcon + ' Perfil ' + perfil.toLowerCase();
+  document.getElementById('invGreeting').textContent = (nombre ? 'Hola ' + nombre + ', esto' : 'Esto') +
+    ' es lo que podrías considerar con tu perfil (edad ' + edad + ', ' + experiencia.toLowerCase() + ').';
+
+  const emergencyBox = document.getElementById('emergencyBox');
+  if(edad < 18){
+    emergencyBox.innerHTML = '';
+  } else if(teQueda <= 0){
+    emergencyBox.innerHTML = '<div class="emergency-note">⚠️ Por ahora no te queda excedente mensual — antes de invertir, enfócate en reducir gastos o aumentar ingresos para liberar margen.</div>';
+  } else {
+    emergencyBox.innerHTML = '<div class="emergency-note">💡 Antes de invertir, asegúrate de tener un fondo de emergencia de 3 a 6 meses de tus gastos totales en un instrumento líquido y de bajo riesgo.</div>';
+  }
+
+  document.getElementById('invList').innerHTML = ideas.join('');
+}
+
+calcular();
+</script>
+</body>
+</html>
